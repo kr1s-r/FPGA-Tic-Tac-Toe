@@ -60,7 +60,7 @@ module uart_rx_tb();
         .reset(),
         .rx_serial(rx_serial),
         .rx_data_valid(),
-        .rx_data(rx_byte)
+        .rx_byte(rx_byte)
     );
     
     // Clock generation
