@@ -26,7 +26,7 @@ git clone https://github.com/kr1s-r/FPGA-Tic-Tac-Toe.git
 - Open Vivado and open the Tcl console and do the following commands
 
 ```tcl
-cd c:/<project-location>/PROJECT_NAME
+cd c:/<project-location>/FPGA-Tic-Tac-Toe
 source ./Tic-Tac-Toe-Project.tcl
 ```
 
