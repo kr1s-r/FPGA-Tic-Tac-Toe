@@ -1,5 +1,7 @@
 # Tic-Tac-Toe Project
 
+- [Setting up Vivado Project in Github](./docs/GITHUB_PROJECT_SETUP.md)
+
 ## Getting Started
 
 This repository is managed using a **TCL-based Vivado workflow**.  
@@ -25,7 +27,7 @@ git clone https://github.com/kr1s-r/FPGA-Tic-Tac-Toe.git
 
 ```tcl
 cd c:/<project-location>/PROJECT_NAME
-source ./project_name.tcl
+source ./Tic-Tac-Toe-Project.tcl
 ```
 
 #### 3. You might have to add all source files in Vivado Project Manager
