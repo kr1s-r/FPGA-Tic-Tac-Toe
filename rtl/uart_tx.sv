@@ -29,7 +29,7 @@ module uart_tx #(parameter CLKS_PER_BIT = 868) (
     output logic tx_done
 );
     // Internal Signals
-    logic [$clog2(CLKS_PER_BIT):0] clk_count;
+    logic [$clog2(CLKS_PER_BIT)-1:0] clk_count;
     logic [2:0] bit_index;
     logic [7:0] tx_data;
     

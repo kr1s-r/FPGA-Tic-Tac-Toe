@@ -72,7 +72,7 @@ module uart_tx_tb();
         #(CLK_PERIOD/2);
     end
     
-        // Task to send a byte via TX and verify that RX receives it
+    // Task to send a byte via TX and verify that RX receives it
     task UART_WRITE_BYTE (input [7:0] data);
         begin
             // Wait until rising edge of clk
