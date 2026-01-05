@@ -29,7 +29,7 @@ module uart_tx #(parameter CLKS_PER_BIT = 868) (
     output logic tx_done
 );
     // Internal Signals
-    logic [$clog2(CLKS_PER_BIT)-1:0] clk_count;
+    logic [$clog2(CLKS_PER_BIT):0] clk_count;
     logic [2:0] bit_index;
     logic [7:0] tx_data;
     
@@ -60,37 +60,38 @@ module uart_tx #(parameter CLKS_PER_BIT = 868) (
             // generate start bit (start bit  = 0)
             // wait CLKS_PER_BIT - 1 for start bit to finish
             TX_START_BIT: begin
-                if (clk_count < CLKS_PER_BIT - 1) next_state = TX_START_BIT;
-                else next_state = TX_DATA_BITS;
+                if (clk_count == CLKS_PER_BIT - 1) next_state = TX_DATA_BITS;
+                else next_state = TX_START_BIT;
             end
             
             // wait CLKS_PER_BIT -1 clk cycles for data bit to finish
             TX_DATA_BITS: begin
-                if (clk_count == CLKS_PER_BIT && bit_index == 7) next_state = TX_STOP_BIT;
+                if (clk_count == CLKS_PER_BIT - 1 && bit_index == 7) next_state = TX_STOP_BIT;
                 else next_state = TX_DATA_BITS;
             end
             
             // stop bit = 1
             // wait CLKS_PER_BIT clk cycles for stop bit to finish
             TX_STOP_BIT:
-                if (clk_count < CLKS_PER_BIT - 1) next_state = TX_STOP_BIT;
-                else next_state = IDLE;
+                if (clk_count == CLKS_PER_BIT - 1) next_state = IDLE;
+                else next_state = TX_STOP_BIT;
                 
             default: next_state = IDLE;
         endcase
     end
     
     // Output Logic
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk) begin        
         case (current_state)
             IDLE: begin
-                tx_serial <= 1;
+                tx_serial <= 1'b1;
+                tx_done <= 1'b0;
+                tx_active <= 1'b0;
                 clk_count <= 0;
                 bit_index <= 0;
-                tx_done <= 0;
                 
                 if (tx_data_valid == 1'b1) begin
-                    tx_active <= 1; // transmitter is active
+                    tx_active <= 1'b1; // transmitter is active
                     tx_data <= tx_byte; // good practice to add another register in case tx_byte changes
                 end
             end
@@ -106,7 +107,8 @@ module uart_tx #(parameter CLKS_PER_BIT = 868) (
             
             // sending out data bits
             TX_DATA_BITS: begin
-                tx_serial <= tx_data[bit_index];
+                if (tx_active)
+                    tx_serial <= tx_data[bit_index];
                 
                 // wait CLKS_PER_BIT
                 if (clk_count == CLKS_PER_BIT - 1) begin
@@ -127,8 +129,8 @@ module uart_tx #(parameter CLKS_PER_BIT = 868) (
                 // wait CLKS_PER_BIT -1 clk cycles for stop bit to finish
                 if (clk_count == CLKS_PER_BIT - 1) begin
                     clk_count <= 0;
-                    tx_done <= 1'b1;
                     tx_active <= 1'b0;
+                    tx_done <= 1'b1;
                 end
                 
                 else clk_count <= clk_count + 1;
