@@ -21,7 +21,7 @@
 // clks per bit = 100 MHz / 115200 baud rate = 868
 module uart_rx #(parameter CLKS_PER_BIT = 868) (
     input logic clk,
-    input reset,
+    input logic reset,
     input logic rx_serial,
     output logic rx_data_valid,
     output logic [7:0] rx_byte
@@ -30,6 +30,7 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
     // Internal signals
     logic [$clog2(CLKS_PER_BIT)-1:0] clk_count;
     logic [2:0] bit_index;
+    logic [7:0] rx_data = 8'b0000_0000; // Initialize to 0 (not in undefined state)
 
     typedef enum logic [2:0] {
         IDLE = 3'b000,
@@ -77,7 +78,7 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
             
             RX_STOP_BIT: begin
                 // stop bit = 1 (always)
-                // wait CLK_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
+                // wait CLKS_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
                 if (clk_count == CLKS_PER_BIT - 1) next_state = CLEANUP;
                 else next_state = RX_STOP_BIT;
             end
@@ -97,7 +98,8 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
                 rx_data_valid <= 0;
                 clk_count <= 0;
                 bit_index <= 0;
-                rx_byte <= 0;
+//                rx_data <= 0; // don't set bit to 0 here or it will clear every time
+//                rx_byte <= 0;
             end
             
             RX_START_BIT: begin
@@ -112,7 +114,7 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
                 // wait CLKS_PER_BIT - 1 (868-1) clk cycles to sample serial data
                 if (clk_count == CLKS_PER_BIT - 1) begin
                     clk_count <= 0; // reset clk counter
-                    rx_byte[bit_index] <= rx_serial;
+                    rx_data[bit_index] <= rx_serial;
                     
                     // if we received all the bits
                     if (bit_index == 7)
@@ -126,7 +128,7 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
             end
             
             RX_STOP_BIT: begin
-                // wait CLK_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
+                // wait CLKS_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
                 if (clk_count == CLKS_PER_BIT - 1) begin
                     clk_count <= 0; // reset clk counter
                     rx_data_valid <= 1'b1;  // data valid = 1
@@ -140,5 +142,7 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
                 rx_data_valid <= 1'b0; // reset valid bit to 0
         endcase
     end
+    
+    assign rx_byte = rx_data;
 
 endmodule

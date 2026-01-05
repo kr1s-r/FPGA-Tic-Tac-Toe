@@ -79,7 +79,7 @@ module uart_rx_tb();
         
         if (rx_byte == 8'h37) $display("Test passed - Correct Byte Received");
         else $display("Test Failed - Incorrect Byte Received");
-    $finish(); // end simulation
+        $finish(); // end simulation
     end
     
 endmodule
