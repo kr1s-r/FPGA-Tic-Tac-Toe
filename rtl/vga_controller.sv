@@ -28,15 +28,15 @@ module vga_controller #(
     output logic        vsync,
     output logic [3:0]  red_out,
     output logic [3:0]  green_out,
-    output logic [3:0]  blue_out
+    output logic [3:0]  blue_out,
+    output logic [$clog2(TOTAL_COLS)-1:0] h_count,
+    output logic [$clog2(TOTAL_ROWS)-1:0] v_count
 );
     
     // Internal Signals
     localparam int ACTIVE_COLS = 640;
     localparam int ACTIVE_ROWS = 480;
     
-    logic [$clog2(TOTAL_COLS)-1:0] h_count;
-    logic [$clog2(TOTAL_ROWS)-1:0] v_count;
     logic visible;
     
     // on rising edge of the clk: count h_count and v_count

@@ -47,6 +47,8 @@ module top_level(
     logic clk_25;
     logic [3:0] pattern;
     logic [3:0] red_video_internal, green_video_internal, blue_video_internal;
+    logic [$clog2(TOTAL_COLS)-1:0] col_count;
+    logic [$clog2(TOTAL_ROWS)-1:0] row_count;
     
     // Synchronizer
     logic rx_sync_1, rx_sync_2;
@@ -108,20 +110,43 @@ module top_level(
         .clk_out(clk_25)
     );
     
+    // Register test pattern from UART when done transmitting
+    // Only least significant 4-bits are needed from the whole byte
+    always_ff @(posedge clk) begin
+        if (reset) pattern <= 4'b0000;
+        else pattern <= rx_byte[3:0];
+    end
+    
+    // Drives Red/Green/Blue video (contains all the patterns and selects)
+    vga_testpattern_gen #(
+        .TOTAL_ROWS(TOTAL_ROWS),
+        .TOTAL_COLS(TOTAL_COLS)    
+    ) VGA_TESTPATTERN_GEN (
+        .col_count(col_count),
+        .row_count(row_count),
+        .pattern(pattern),
+        .red_video(red_video_internal),
+        .green_video(green_video_internal),
+        .blue_video(blue_video_internal)
+    );
+    
+    // controls VGA HSync and VSync pulses
     vga_controller #(
         .TOTAL_ROWS(TOTAL_ROWS),
         .TOTAL_COLS(TOTAL_COLS)
     ) VGA_CONTROLLER (
         .clk(clk_25),
         .reset(reset),
-        .red_in(4'hF),
-        .green_in(4'h0),
-        .blue_in(4'h0),
+        .red_in(red_video_internal),
+        .green_in(green_video_internal),
+        .blue_in(blue_video_internal),
         .hsync(Hsync),
         .vsync(Vsync),
         .red_out(vgaRed),
         .green_out(vgaGreen),
-        .blue_out(vgaBlue)
+        .blue_out(vgaBlue),
+        .h_count(col_count),
+        .v_count(row_count)
     );
     
     assign led = switches_inputs;
