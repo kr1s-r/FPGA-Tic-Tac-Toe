@@ -18,20 +18,23 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-// This module divides the clock by 4
-// (can make a better clk divider that works with any even number or any number)
-module clk_divide_by_4 (
+// This module is an enabled counter that pulses the clk signal at certain times
+// we are using the enabled counter as a clock divider
+module clk_divider #(
+    parameter N = 4
+) (
     input logic clk,
     input logic reset,
-    output logic clk_out
+    output logic clk_en
 );
 
-    logic [1:0] count; // count up to N
+    logic [$clog2(N)-1:0] count; // count up to N
     
     always_ff @(posedge clk) begin
-        if (reset) count <= 2'b00;       
+        if (reset) count <= 0;
+        else if (count == N-1) count <= 0;   
         else count <= count + 1;
     end 
     
-    assign clk_out = count[1];
+    assign clk_en = (count == N-1) ? 1 : 0;
 endmodule

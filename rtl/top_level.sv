@@ -44,9 +44,7 @@ module top_level(
     logic tx_serial;
     logic tx_done;
     
-    logic clk_25;
     logic [3:0] pattern;
-    logic [3:0] red_video_internal, green_video_internal, blue_video_internal;
     logic [$clog2(TOTAL_COLS)-1:0] col_count;
     logic [$clog2(TOTAL_ROWS)-1:0] row_count;
     
@@ -99,17 +97,7 @@ module top_level(
         .CE(CE), .CF(CF), .CG(CG), .DP(DP),
         .AN1(AN1), .AN2(AN2), .AN3(AN3), .AN4(AN4)
     );
-    
-    // -------- VGA ------------
-    // Clock Divider
-    // VGA uses 25 MHz,
-    // so we need to divide our 100 MHz Basys3 clock by 4
-    clk_divide_by_4 CLOCK_DIVIDER_BY_4 (
-        .clk(clk),
-        .reset(reset),
-        .clk_out(clk_25)
-    );
-    
+        
     // Register test pattern from UART when done transmitting
     // Only least significant 4-bits are needed from the whole byte
     always_ff @(posedge clk) begin
@@ -117,29 +105,14 @@ module top_level(
         else pattern <= rx_byte[3:0];
     end
     
-    // Drives Red/Green/Blue video (contains all the patterns and selects)
-    vga_testpattern_gen #(
-        .TOTAL_ROWS(TOTAL_ROWS),
-        .TOTAL_COLS(TOTAL_COLS)    
-    ) VGA_TESTPATTERN_GEN (
-        .col_count(col_count),
-        .row_count(row_count),
-        .pattern(pattern),
-        .red_video(red_video_internal),
-        .green_video(green_video_internal),
-        .blue_video(blue_video_internal)
-    );
-    
-    // controls VGA HSync and VSync pulses
-    vga_controller #(
+    // -------- VGA ------------
+    vga #(
         .TOTAL_ROWS(TOTAL_ROWS),
         .TOTAL_COLS(TOTAL_COLS)
-    ) VGA_CONTROLLER (
-        .clk(clk_25),
+    ) VGA (
+        .clk(clk),
         .reset(reset),
-        .red_in(red_video_internal),
-        .green_in(green_video_internal),
-        .blue_in(blue_video_internal),
+        .pattern(pattern),
         .hsync(Hsync),
         .vsync(Vsync),
         .red_out(vgaRed),

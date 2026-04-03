@@ -19,7 +19,8 @@ module vga_controller #(
     parameter TOTAL_ROWS = 525
 )
 (
-    input  logic        clk,    // 25 MHz clock
+    input  logic        clk,    // 100 MHz clock
+    input  logic        clk_en,
     input  logic        reset,
     input  logic [3:0]  red_in,
     input  logic [3:0]  green_in,
@@ -46,7 +47,7 @@ module vga_controller #(
             v_count <= 0;
         end
         
-        else begin
+        else if (clk_en) begin
             if (h_count == TOTAL_COLS - 1) begin
                 h_count <= 0;
                 

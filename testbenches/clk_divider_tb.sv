@@ -25,12 +25,12 @@ module clk_divider_tb();
     
     logic clk = 0;
     logic reset;
-    logic clk_div4;
+    logic clk_en;
     
-    clk_divide_by_4 UUT (
+    clk_divider #(.N(4)) UUT (
         .clk(clk),
         .reset(reset),
-        .clk_out(clk_div4)
+        .clk_en(clk_en)
     );
     
     // clock generation
