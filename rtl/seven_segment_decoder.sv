@@ -64,9 +64,9 @@ module seven_segment_decoder (
             4'b1000: decoded_bits = 7'b1111111; // 8
             4'b1001: decoded_bits = 7'b1111011; // 9
             4'b1010: decoded_bits = 7'b1110111; // A (Not used in stopwatch)
-            4'b1011: decoded_bits = 7'b1111111; // B (Not used in stopwatch)
+            4'b1011: decoded_bits = 7'b0011111; // B (Not used in stopwatch)
             4'b1100: decoded_bits = 7'b1001110; // C (Not used in stopwatch)
-            4'b1101: decoded_bits = 7'b1111110; // D (Not used in stopwatch)
+            4'b1101: decoded_bits = 7'b0111101; // D (Not used in stopwatch)
             4'b1110: decoded_bits = 7'b1001111; // E (Not used in stopwatch)
             4'b1111: decoded_bits = 7'b1000111; // F (Not used in stopwatch)
 // Students: fill in the remaining rows for this case statement,
