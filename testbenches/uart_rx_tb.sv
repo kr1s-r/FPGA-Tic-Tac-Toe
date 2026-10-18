@@ -28,6 +28,7 @@ module uart_rx_tb();
     
     // Internal signals
     logic clk = 0;
+    logic reset = 1;
     logic rx_serial = 1;
     logic [7:0] rx_byte;
     
@@ -53,11 +54,21 @@ module uart_rx_tb();
             #BIT_PERIOD;
         end
     endtask
+
+    task PRESS_RESET();
+        begin
+            @(posedge clk);
+            reset <= 1'b1;
+            repeat(1000) @(posedge clk);
+            reset <= 1'b0;
+            @(posedge clk);
+        end
+    endtask
     
     // UUT
     uart_rx uut (
         .clk(clk),
-        .reset(),
+        .reset(reset),
         .rx_serial(rx_serial),
         .rx_data_valid(),
         .rx_byte(rx_byte)
@@ -73,12 +84,23 @@ module uart_rx_tb();
     
     // Test stimulus
     initial begin
-        @(posedge clk); // wait until the rising edge of the clk to call task
+        // @(posedge clk); // wait until the rising edge of the clk to call task
+        PRESS_RESET();
         UART_WRITE_BYTE(8'h37);
         @(posedge clk); // wait one more cycle after transmission completes to give time to finish processing
         
         if (rx_byte == 8'h37) $display("Test passed - Correct Byte Received");
         else $display("Test Failed - Incorrect Byte Received");
+
+        PRESS_RESET();
+        if (rx_byte == 8'h00) $display("Test passed - reset cleared rx_byte");
+        else $display("Test Failed - reset did not clear rx_byte (%h)", rx_byte);
+
+        UART_WRITE_BYTE(8'h5A);
+        @(posedge clk);
+        if (rx_byte == 8'h5A) $display("Test passed - Correct Byte Received");
+        else $display("Test Failed - Incorrect Byte Received");
+
         $finish(); // end simulation
     end
     

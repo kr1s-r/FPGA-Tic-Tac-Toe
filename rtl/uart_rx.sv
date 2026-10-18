@@ -92,55 +92,65 @@ module uart_rx #(parameter CLKS_PER_BIT = 868) (
     
     // Output Logic
     always_ff @(posedge clk) begin
-        case (current_state)
-            IDLE: begin
-                // reset everything to 0
-                rx_data_valid <= 0;
-                clk_count <= 0;
-                bit_index <= 0;
-//                rx_data <= 0; // don't set bit to 0 here or it will clear every time
-//                rx_byte <= 0;
-            end
-            
-            RX_START_BIT: begin
-                // check middle of the start bit to make sure it's still low
-                if (clk_count == (CLKS_PER_BIT - 1) / 2)
-                    clk_count <= 0; // if in the middle, reset clk counter
-                else
-                    clk_count <= clk_count + 1; // else increment counter
-            end
-            
-            RX_DATA_BITS: begin
-                // wait CLKS_PER_BIT - 1 (868-1) clk cycles to sample serial data
-                if (clk_count == CLKS_PER_BIT - 1) begin
-                    clk_count <= 0; // reset clk counter
-                    rx_data[bit_index] <= rx_serial;
-                    
-                    // if we received all the bits
-                    if (bit_index == 7)
-                        bit_index <= 0; // reset bit_index
+        if (reset) begin
+            // receives no data on reset
+            rx_data_valid <= 0;
+            clk_count <= 0;
+            bit_index <= 0;
+            rx_data <= 8'b0000_0000; // clears seven seg display when reset btn is pressed
+        end
+
+        else begin
+            case (current_state)
+                IDLE: begin
+                    // reset everything to 0
+                    rx_data_valid <= 0;
+                    clk_count <= 0;
+                    bit_index <= 0;
+                //    rx_data <= 0; // don't set bit to 0 here or it will clear every time
+                //    rx_byte <= 0;
+                end
+                
+                RX_START_BIT: begin
+                    // check middle of the start bit to make sure it's still low
+                    if (clk_count == (CLKS_PER_BIT - 1) / 2)
+                        clk_count <= 0; // if in the middle, reset clk counter
                     else
-                        bit_index <= bit_index + 1; // else increment bit index
+                        clk_count <= clk_count + 1; // else increment counter
                 end
                 
-                else
-                    clk_count <= clk_count + 1; // else increment clk counter
-            end
-            
-            RX_STOP_BIT: begin
-                // wait CLKS_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
-                if (clk_count == CLKS_PER_BIT - 1) begin
-                    clk_count <= 0; // reset clk counter
-                    rx_data_valid <= 1'b1;  // data valid = 1
+                RX_DATA_BITS: begin
+                    // wait CLKS_PER_BIT - 1 (868-1) clk cycles to sample serial data
+                    if (clk_count == CLKS_PER_BIT - 1) begin
+                        clk_count <= 0; // reset clk counter
+                        rx_data[bit_index] <= rx_serial;
+                        
+                        // if we received all the bits
+                        if (bit_index == 7)
+                            bit_index <= 0; // reset bit_index
+                        else
+                            bit_index <= bit_index + 1; // else increment bit index
+                    end
+                    
+                    else
+                        clk_count <= clk_count + 1; // else increment clk counter
                 end
                 
-                else
-                    clk_count <= clk_count + 1; // else increment clk counter
-            end
-            
-            CLEANUP:
-                rx_data_valid <= 1'b0; // reset valid bit to 0
-        endcase
+                RX_STOP_BIT: begin
+                    // wait CLKS_PER_BIT - 1 (868-1) clk cycles for stop bit to finish
+                    if (clk_count == CLKS_PER_BIT - 1) begin
+                        clk_count <= 0; // reset clk counter
+                        rx_data_valid <= 1'b1;  // data valid = 1
+                    end
+                    
+                    else
+                        clk_count <= clk_count + 1; // else increment clk counter
+                end
+                
+                CLEANUP:
+                    rx_data_valid <= 1'b0; // reset valid bit to 0
+            endcase
+        end
     end
     
     assign rx_byte = rx_data;
