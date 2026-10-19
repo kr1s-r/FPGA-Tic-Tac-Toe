@@ -35,6 +35,8 @@ module top_level(
     // Constants
     localparam int TOTAL_COLS = 800;
     localparam int TOTAL_ROWS = 525;
+
+    localparam int CLKS_PER_BIT = 868; // 100 MHz / 115200 baud rate = 868
     
     // Internal signal declarations
     logic rx_data_valid;
@@ -47,8 +49,14 @@ module top_level(
     logic [3:0] pattern;
     logic [$clog2(TOTAL_COLS)-1:0] col_count;
     logic [$clog2(TOTAL_ROWS)-1:0] row_count;
+    logic [3:0] red_video_internal, green_video_internal, blue_video_internal;
     
-    // Synchronizer
+    logic [17:0] board;
+    logic [3:0] cell_address;
+    logic [1:0] game_state;
+    logic player_turn;
+    
+    // ------ SYNCHRONIZER ------
     logic rx_sync_1, rx_sync_2;
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -62,8 +70,9 @@ module top_level(
         end
     end
     
+    // ------ UART ------
     // UART Receiver (RX)
-    uart_rx #(.CLKS_PER_BIT(868)) UART_RX (
+    uart_rx #(.CLKS_PER_BIT(CLKS_PER_BIT)) UART_RX (
         .clk(clk),
         .reset(reset),
         .rx_serial(rx_sync_2),
@@ -72,7 +81,7 @@ module top_level(
     );
     
     // UART Transceiver (TX)
-    uart_tx #(.CLKS_PER_BIT(868)) UART_TX (
+    uart_tx #(.CLKS_PER_BIT(CLKS_PER_BIT)) UART_TX (
         .clk(clk),
         .reset(reset),
         .tx_data_valid(rx_data_valid),  // pass RX to TX module for loopback
@@ -84,9 +93,60 @@ module top_level(
     
     // drive UART line high when transmitter is not active
     assign RsTx = tx_active ? tx_serial : 1'b1;
+        
+//    // Register test pattern from UART when done transmitting
+//    // Only least significant 4-bits are needed from the whole byte
+//    always_ff @(posedge clk) begin
+//        if (reset) pattern <= 4'b0000;
+//        else pattern <= rx_byte[3:0];
+//    end
     
-    // Seven-Segment Display
-    seven_segment_display_subsystem SEVEN_SEGMENT_DISPLAY(
+    // ------ TIC TAC TOE GAME ------
+    tic_tac_toe TTT (
+        .clk(clk),
+        .reset(reset),
+        .rx_data_valid(rx_data_valid),
+        .rx_byte(rx_byte),
+        .board(board),
+        .cell_address(cell_address),
+        .game_state(game_state),
+        .player_turn(player_turn)
+    );
+    
+    // Display Controller - drawing logic
+    tic_tac_toe_display_controller TTT_VGA (
+        .h_count(col_count),
+        .v_count(row_count),
+        .board(board),
+        .cell_address(cell_address),
+        .game_state(game_state),
+        .player_turn(player_turn),
+        .red_vga(red_video_internal),
+        .green_vga(green_video_internal),
+        .blue_vga(blue_video_internal)
+    );
+    
+    // ------- VGA ------
+    vga #(
+        .TOTAL_ROWS(TOTAL_ROWS),
+        .TOTAL_COLS(TOTAL_COLS)
+    ) VGA (
+        .clk(clk),
+        .reset(reset),
+        .red_in(red_video_internal),
+        .green_in(green_video_internal),
+        .blue_in(blue_video_internal),
+        .hsync(Hsync),
+        .vsync(Vsync),
+        .red_out(vgaRed),
+        .green_out(vgaGreen),
+        .blue_out(vgaBlue),
+        .h_count(col_count),
+        .v_count(row_count)
+    );
+    
+    // ------- Seven Segment Display ------
+    seven_segment_display_subsystem SEVEN_SEGMENT_DISPLAY (
         .clk(clk),
         .reset(reset),
         .sec_dig1(rx_byte[3:0]),
@@ -96,30 +156,6 @@ module top_level(
         .CA(CA), .CB(CB), .CC(CC), .CD(CD),
         .CE(CE), .CF(CF), .CG(CG), .DP(DP),
         .AN1(AN1), .AN2(AN2), .AN3(AN3), .AN4(AN4)
-    );
-        
-    // Register test pattern from UART when done transmitting
-    // Only least significant 4-bits are needed from the whole byte
-    always_ff @(posedge clk) begin
-        if (reset) pattern <= 4'b0000;
-        else pattern <= rx_byte[3:0];
-    end
-    
-    // -------- VGA ------------
-    vga #(
-        .TOTAL_ROWS(TOTAL_ROWS),
-        .TOTAL_COLS(TOTAL_COLS)
-    ) VGA (
-        .clk(clk),
-        .reset(reset),
-        .pattern(pattern),
-        .hsync(Hsync),
-        .vsync(Vsync),
-        .red_out(vgaRed),
-        .green_out(vgaGreen),
-        .blue_out(vgaBlue),
-        .h_count(col_count),
-        .v_count(row_count)
     );
     
     assign led = switches_inputs;

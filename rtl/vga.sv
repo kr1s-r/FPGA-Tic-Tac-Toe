@@ -1,4 +1,3 @@
-`timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -27,7 +26,9 @@ module vga #(
 (
     input  logic        clk,
     input  logic        reset,
-    input  logic [3:0]  pattern,
+    input  logic [3:0]  red_in,
+    input  logic [3:0]  green_in,
+    input  logic [3:0]  blue_in,
     output logic        hsync,
     output logic        vsync,
     output logic [3:0]  red_out,
@@ -37,13 +38,10 @@ module vga #(
     output logic [$clog2(TOTAL_ROWS)-1:0] v_count
 );
 
-    // Internal Signals
-    logic clk_en;
-    logic [3:0] red_video_internal, green_video_internal, blue_video_internal;
-
     // Clock Divider
     // VGA uses 25 MHz,
     // Instead of dividing the CLK, we use an enabled counter that pulses
+    logic clk_en;
     clk_divider #(.N(4)) CLOCK_DIVIDER (
         .clk(clk),
         .reset(reset),
@@ -51,17 +49,17 @@ module vga #(
     );
     
     // Drives Red/Green/Blue video (contains all the patterns and selects)
-    vga_testpattern_gen #(
-        .TOTAL_ROWS(TOTAL_ROWS),
-        .TOTAL_COLS(TOTAL_COLS)    
-    ) VGA_TESTPATTERN_GEN (
-        .col_count(h_count),
-        .row_count(v_count),
-        .pattern(pattern),
-        .red_video(red_video_internal),
-        .green_video(green_video_internal),
-        .blue_video(blue_video_internal)
-    );
+//    vga_testpattern_gen #(
+//        .TOTAL_ROWS(TOTAL_ROWS),
+//        .TOTAL_COLS(TOTAL_COLS)    
+//    ) VGA_TESTPATTERN_GEN (
+//        .col_count(h_count),
+//        .row_count(v_count),
+//        .pattern(pattern),
+//        .red_video(red_video_internal),
+//        .green_video(green_video_internal),
+//        .blue_video(blue_video_internal)
+//    );
     
     // controls VGA HSync and VSync pulses
     vga_controller #(
@@ -71,9 +69,9 @@ module vga #(
         .clk(clk),
         .clk_en(clk_en),
         .reset(reset),
-        .red_in(red_video_internal),
-        .green_in(green_video_internal),
-        .blue_in(blue_video_internal),
+        .red_in(red_in),
+        .green_in(green_in),
+        .blue_in(blue_in),
         .hsync(hsync),
         .vsync(vsync),
         .red_out(red_out),

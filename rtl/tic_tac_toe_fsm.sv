@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module tic_tac_toe_fsm (
+module tic_tac_toe_fsm(
     input logic clk,
     input logic reset,
     input logic move_valid,
@@ -86,20 +86,16 @@ module tic_tac_toe_fsm (
                 else next_state = IDLE;
             end
             
-            // reset game
-            GAME_OVER: next_state = IDLE;
+            // stay here until reset - the board is not cleared, so going back to
+            // IDLE state would let PLAYER1 keep playing on a finished board
+            GAME_OVER: next_state = GAME_OVER;
             
             default: next_state = IDLE;
         endcase  
     end
     
-    // output logic
-    assign ram_we  = (next_state == WRITE_BOARD) ? 1'b1 : 1'b0;
-    assign ram_din = (player_turn == 1'b0) ? P1 : P2;
-    
-    always_ff @(posedge clk) begin
-//        ram_we <= 1'b0;       
-        
+    // output logic    
+    always_ff @(posedge clk) begin    
         case (current_state)
             IDLE: begin
                 player_turn <= 1'b0;
@@ -107,6 +103,10 @@ module tic_tac_toe_fsm (
 //                ram_we <= 1'b0;
 //                ram_din <= 2'b00;
             end
+
+            PLAYER1_TURN: ;
+            PLAYER2_TURN: ;           
+            WRITE_BOARD: ;
             
 //            WRITE_BOARD: begin 
 //                ram_we <= 1'b1;
@@ -133,5 +133,8 @@ module tic_tac_toe_fsm (
             end
         endcase
     end
+
+    assign ram_we  = (next_state == WRITE_BOARD) ? 1'b1 : 1'b0;
+    assign ram_din = (player_turn == 1'b0) ? P1 : P2;
 
 endmodule
