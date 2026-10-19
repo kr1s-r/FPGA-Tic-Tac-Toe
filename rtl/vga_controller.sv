@@ -64,14 +64,29 @@ module vga_controller #(
     // sync pulses are active-low => timings showed above
     // horizontal sync pulse is 96px
     // vertical sync pulse is 2px
-    assign hsync   = ~(h_count >= 656 && h_count < 752);
-    assign vsync   = ~(v_count >= 490 && v_count < 492);
+    // assign hsync   = ~(h_count >= 656 && h_count < 752);
+    // assign vsync   = ~(v_count >= 490 && v_count < 492);
     
     // screen is visible only in active area (within 640x480)
     assign visible = (h_count < 640) && (v_count < 480);
 
-    assign red_out   = visible ? red_in : 4'h0;
-    assign green_out = visible ? green_in : 4'h0;
-    assign blue_out  = visible ? blue_in : 4'h0;
+    // assign red_out   = visible ? red_in : 4'h0;
+    // assign green_out = visible ? green_in : 4'h0;
+    // assign blue_out  = visible ? blue_in : 4'h0;
+
+    // register outputs so glitches from the pixel logic never reach the pins
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            hsync <= 1'b1;
+            vsync <= 1'b1;
+            red_out <= 4'h0; green_out <= 4'h0; blue_out <= 4'h0;
+        end else begin
+            hsync     <= ~(h_count >= 656 && h_count < 752);
+            vsync     <= ~(v_count >= 490 && v_count < 492);
+            red_out   <= visible ? red_in   : 4'h0;
+            green_out <= visible ? green_in : 4'h0;
+            blue_out  <= visible ? blue_in  : 4'h0;
+        end
+    end
 
 endmodule
